@@ -3,6 +3,7 @@ const {mongoose} = require("mongoose")
 const cors = require("cors")
 require('dotenv').config()
 const EmergencyInfo = require('./models/EmergencyInfoModel');
+const upload = require("./middleware/upload");
 
 
 const app = express();
@@ -23,21 +24,45 @@ app.get('/',(req,res)=>{
     })
 })
 
-app.post('/api/emergencyinfo',async(req,res)=>{
-    try{
-        // const saved = req.body
-        const newInfo = new EmergencyInfo(req.body)
-        const saved = await newInfo.save();
-        res.status(201).json({
-            message : saved
-        })
-    }catch(err){
-        console.log('err at post',err)
-        res.status(500).json({
-            error : err
-        })
-    }
-})
+app.post('/api/emergencyinfo', upload.single('photo'), async (req, res) => {
+  try {
+    const {
+      fullName,
+      email,
+      bloodType,
+      emergencyContact,
+      allergies,
+      medications,
+      medicalConditions,
+      dateOfBirth,
+      address,
+      phoneNumber,
+    } = req.body;
+
+    const photoUrl = req.file?.path || ''; // Cloudinary URL
+
+    const newInfo = new EmergencyInfo({
+      fullName,
+      email,
+      bloodType,
+      emergencyContact,
+      allergies,
+      medications,
+      medicalConditions,
+      dateOfBirth,
+      address,
+      phoneNumber,
+      photo: photoUrl, // Save photo URL to DB
+    });
+    console.log(newInfo)
+    const saved = await newInfo.save();
+
+    res.status(201).json({ message: saved });
+  } catch (err) {
+    console.error('err at post', err);
+    res.status(500).json({ error: err });
+  }
+});
 
 app.get('/api/emergencyinfo/:email', async (req, res) => {
   try {
